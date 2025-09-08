@@ -1,11 +1,7 @@
-#include <cerrno>
 #include <csignal>
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <fcntl.h>
-#include <unistd.h>
 
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
