@@ -196,11 +196,20 @@ static void set_crtc(drmModeModeInfo mode, uint32_t fb_id)
     if (ret) die("drmModeSetCrtc");
 }
 
-static const char *vert_src =
-    "attribute vec2 a_pos;\n"
-    "void main() {\n"
-    "  gl_Position = vec4(a_pos, 0.0, 1.0);\n"
-    "}\n";
+static int calc_elapsed_usec(const timeval &start, const timeval &end)
+{
+    long seconds = end.tv_sec - start.tv_sec;
+    long microseconds = end.tv_usec - start.tv_usec;
+    long total_microseconds = seconds * 1000000 + microseconds;
+    return total_microseconds;
+}
+
+static const char *vert_src = R"(
+attribute vec2 a_pos;
+void main() {
+    gl_Position = vec4(a_pos, 0.0, 1.0);
+}
+)";
 
 static const char *frag_src =
     "precision mediump float;\n"
@@ -265,55 +274,89 @@ int main()
     }
     glUseProgram(prog);
 
-    // Fullscreen triangle (NDC)
-    GLfloat verts[] = {
-        -1.0f, -1.0f,
-        1.0f, -1.0f,
-        -1.0f, 1.0f};
     GLuint vbo;
     glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-    glViewport(0, 0, mode.hdisplay, mode.vdisplay);
-    glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    glFinish();
-
-    if (!eglSwapBuffers(egl_display, egl_surf)) die("eglSwapBuffers");
-
-    // Lock front buffer and create DRM fb with addfb2
-    bo = gbm_surface_lock_front_buffer(gbm_surf);
-    if (!bo) die("gbm_surface_lock_front_buffer");
-
-    uint32_t width = gbm_bo_get_width(bo);
-    uint32_t height = gbm_bo_get_height(bo);
-    uint32_t stride = gbm_bo_get_stride(bo);
-    uint32_t handle = gbm_bo_get_handle(bo).u32;
-
-    uint32_t handles[4] = {handle, 0, 0, 0};
-    uint32_t pitches[4] = {stride, 0, 0, 0};
-    uint32_t offsets[4] = {0, 0, 0, 0};
-
-    if (drmModeAddFB2(drm_fd, width, height, GBM_FORMAT_XRGB8888,
-                      handles, pitches, offsets, &fb_id, 0))
-    {
-        die("drmModeAddFB2");
-    }
-
-    set_crtc(mode, fb_id);
-
-    printf("Output rendered on composite. Ctrl-C to exit.\n");
+    GLfloat xtop = -1.0f;
+    uint32_t prev_fb_id = 0;
 
     while (running)
     {
-        sleep(1);
+        timeval ts_start;
+        gettimeofday(&ts_start, nullptr);
+
+        // Example: modify vertices here if you want
+        GLfloat verts[] = {
+            -1.0f, -1.0f,
+            1.0f, -1.0f,
+            -1.0f, 1.0f};
+
+        verts[4] = xtop;
+        xtop += 0.01;
+        if (xtop > 1.0f) xtop = -1.0f;
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+        glViewport(0, 0, mode.hdisplay, mode.vdisplay);
+        glClearColor(0, 0, 0, 1);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glFinish();
+
+        // Swap EGL buffers
+        if (!eglSwapBuffers(egl_display, egl_surf)) die("eglSwapBuffers");
+
+        // Get new buffer
+        gbm_bo *new_bo = gbm_surface_lock_front_buffer(gbm_surf);
+        if (!new_bo) die("gbm_surface_lock_front_buffer");
+
+        uint32_t width = gbm_bo_get_width(new_bo);
+        uint32_t height = gbm_bo_get_height(new_bo);
+        uint32_t stride = gbm_bo_get_stride(new_bo);
+        uint32_t handle = gbm_bo_get_handle(new_bo).u32;
+
+        uint32_t handles[4] = {handle, 0, 0, 0};
+        uint32_t pitches[4] = {stride, 0, 0, 0};
+        uint32_t offsets[4] = {0, 0, 0, 0};
+
+        uint32_t new_fb_id = 0;
+        if (drmModeAddFB2(drm_fd, width, height, GBM_FORMAT_XRGB8888,
+                          handles, pitches, offsets, &new_fb_id, 0))
+        {
+            die("drmModeAddFB2");
+        }
+
+        // Set new framebuffer BEFORE releasing old buffer
+        set_crtc(mode, new_fb_id);
+
+        // Now safe to release old buffer and remove old FB
+        if (bo) gbm_surface_release_buffer(gbm_surf, bo);
+        if (prev_fb_id) drmModeRmFB(drm_fd, prev_fb_id);
+
+        // Update for next iteration
+        bo = new_bo;
+        prev_fb_id = fb_id;
+        fb_id = new_fb_id;
+
+        timeval ts_end;
+        gettimeofday(&ts_end, nullptr);
+        int elapsed = calc_elapsed_usec(ts_start, ts_end);
+        double elapsed_f = elapsed;
+        elapsed_f /= 1000.0;
+        double fps = 1000.0 / elapsed_f;
+
+        printf("Work %.2f msec (theoretical %d FPS)       \r", elapsed_f, (int)fps);
+
+        // ~60 FPS = 16000
+        usleep(32000 - (int)elapsed_f);
     }
 
-    printf("Goodbye!\n");
+    glDeleteBuffers(1, &vbo);
+
+    printf("Goodbye!                                        \n");
     cleanup();
     return 0;
 }
