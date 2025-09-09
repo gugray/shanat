@@ -86,8 +86,6 @@ int main()
     GLuint vbo;
     glGenBuffers(1, &vbo);
 
-    GLfloat xtop = -1.0f;
-
     FPS fps(25);
 
     while (running)
@@ -100,13 +98,12 @@ int main()
 
         // Calculate and feed vertices
         GLfloat verts[] = {
-            -1.0f, -1.0f, 0, 0,
-            1.0f, -1.0f, 0, 0,
-            -1.0f, 1.0f, 0, 0};
-
-        verts[8] = xtop;
-        xtop += 0.01;
-        if (xtop > 1.0f) xtop = -1.0f;
+            -0.4f, -0.5f, 0, 0,
+            0.4f, -0.5f, 0, 0,
+            -0.4f, 0.5f, 0, 0,
+            -0.4f, 0.5f, 0, 0,
+            0.4f, -0.5f, 0, 0,
+            0.4f, 0.5f, 0, 0};
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
@@ -116,7 +113,7 @@ int main()
         glViewport(0, 0, mode.hdisplay, mode.vdisplay);
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
         glFinish();
 
         put_on_screen();
