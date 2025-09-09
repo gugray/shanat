@@ -2,7 +2,11 @@
 #include <cstdio>
 
 #include "fps.h"
+#include "geo.h"
 #include "horrors.h"
+
+#include "lissaj/lissaj_model.h"
+#include "lissaj/lissaj_shaders.h"
 
 static bool running = true;
 
@@ -32,21 +36,17 @@ static GLuint compile_shader(GLenum type, const char *src)
     return s;
 }
 
-static const char *vert_src = R"(
-attribute vec4 a_pos;
-void main() {
-    gl_Position = vec4(a_pos.xy, 0.0, 1.0);
+static void report_shader_link_error(GLuint prog)
+{
+    GLint len = 0;
+    glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &len);
+    char *log = new char[len ? len : 1];
+    log[0] = '\0';
+    glGetProgramInfoLog(prog, len, nullptr, log);
+    fprintf(stderr, "Program link error: %s\n", log);
+    delete[] log;
+    exit_with_cleanup(1);
 }
-)";
-
-static const char *frag_src = R"(
-precision mediump float;
-uniform float time;
-uniform vec2 resolution;
-void main() {
-    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-}
-)";
 
 int main()
 {
@@ -54,10 +54,11 @@ int main()
     signal(SIGTERM, sighandler);
 
     init_horrors();
+    FPS fps(25);
 
     // Compile shaders, link program
-    GLuint vs = compile_shader(GL_VERTEX_SHADER, vert_src);
-    GLuint fs = compile_shader(GL_FRAGMENT_SHADER, frag_src);
+    GLuint vs = compile_shader(GL_VERTEX_SHADER, lissaj_vert);
+    GLuint fs = compile_shader(GL_FRAGMENT_SHADER, lissaj_frag);
     GLuint prog = glCreateProgram();
     glAttachShader(prog, vs);
     glAttachShader(prog, fs);
@@ -65,36 +66,59 @@ int main()
     glLinkProgram(prog);
     GLint ok = 0;
     glGetProgramiv(prog, GL_LINK_STATUS, &ok);
-    if (!ok)
-    {
-        GLint len = 0;
-        glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &len);
-        char *log = new char[len ? len : 1];
-        log[0] = '\0';
-        glGetProgramInfoLog(prog, len, nullptr, log);
-        fprintf(stderr, "Program link error: %s\n", log);
-        delete[] log;
-        exit_with_cleanup(1);
-    }
+    if (!ok) report_shader_link_error(prog);
     glUseProgram(prog);
 
-    // Get uniform locations
-    GLint time_loc = glGetUniformLocation(prog, "time");
-    GLint resolution_loc = glGetUniformLocation(prog, "resolution");
+    // OpenGL fidgeting
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glEnable(GL_DEPTH_TEST);
+    //glDepthFunc(GL_LESS);
 
     // Buffer the shader will be outputting to
     GLuint vbo;
     glGenBuffers(1, &vbo);
 
-    FPS fps(25);
+    // Non-boilerplate
+    // ===================================================
+
+    // Initialize model
+    const float camDist = 3;
+    Vec3 camPosition, target, up;
+    camPosition.set(0, 0, camDist);
+    target.set(0, 0, 0);
+    up.set(0, 1, 0);
+    Mat4 proj, view;
+    perspective(45, (float)mode.hdisplay / (float)mode.vdisplay), 0.1, 100, proj);
+    lookAt(camPosition, target, up, view);
+
+    // Get uniform locations
+    GLint time_loc = glGetUniformLocation(prog, "time");
+    GLint resolution_loc = glGetUniformLocation(prog, "resolution");
+    GLint view_loc = glGetUniformLocation(prog, "view");
+    GLint proj_loc = glGetUniformLocation(prog, "proj"); 
+    // ===================================================
 
     while (running)
     {
         float current_time = fps.frame_start();
 
+        // Non-boilerplate
+        // ===================================================
+        LissajModel::updatePoints(current_time * 0.5);
+        const float camAngle = current_time * 1.0;
+        camPosition.set(
+            camDist * sin(camAngle),
+            2,
+            camDist * cos(camAngle),
+        );
+        lookAt(camPosition, target, up, view);
+
         // Set uniforms
         glUniform1f(time_loc, current_time);
         glUniform2f(resolution_loc, (float)mode.hdisplay, (float)mode.vdisplay);
+        glUniformMatrix4fv(view_loc, 1, GL_FALSE, view.vals);
+        glUniformMatrix4fv(proj_loc, 1, GL_FALSE, proj.vals);
 
         // Calculate and feed vertices
         GLfloat verts[] = {
@@ -105,14 +129,16 @@ int main()
             0.4f, -0.5f, 0, 0,
             0.4f, 0.5f, 0, 0};
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+        // ===================================================
 
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glViewport(0, 0, mode.hdisplay, mode.vdisplay);
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
+        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glFinish();
 
