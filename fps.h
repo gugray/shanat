@@ -6,19 +6,20 @@
 class FPS
 {
   private:
-    const int targetFPS;
+    const int target_fps;
     const long cycle_usec;
-    const int bufSize;
-    long *elapsedMicros;
+    const int buf_size;
+    long *elapsec_usec;
     int ix;
+    timeval ts_init;
     timeval ts_start;
 
   private:
     long get_avg_elapsed();
 
   public:
-    FPS(int targetFPS);
-    void frame_start();
+    FPS(int target_fps);
+    float frame_start();
     void frame_end();
 };
 

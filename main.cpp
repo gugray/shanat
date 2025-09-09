@@ -33,17 +33,20 @@ static GLuint compile_shader(GLenum type, const char *src)
 }
 
 static const char *vert_src = R"(
-attribute vec2 a_pos;
+attribute vec4 a_pos;
 void main() {
-    gl_Position = vec4(a_pos, 0.0, 1.0);
+    gl_Position = vec4(a_pos.xy, 0.0, 1.0);
 }
 )";
 
-static const char *frag_src =
-    "precision mediump float;\n"
-    "void main() {\n"
-    "  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
-    "}\n";
+static const char *frag_src = R"(
+precision mediump float;
+uniform float time;
+uniform vec2 resolution;
+void main() {
+    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+}
+)";
 
 int main()
 {
@@ -52,7 +55,7 @@ int main()
 
     init_horrors();
 
-    // GL program
+    // Compile shaders, link program
     GLuint vs = compile_shader(GL_VERTEX_SHADER, vert_src);
     GLuint fs = compile_shader(GL_FRAGMENT_SHADER, frag_src);
     GLuint prog = glCreateProgram();
@@ -75,6 +78,11 @@ int main()
     }
     glUseProgram(prog);
 
+    // Get uniform locations
+    GLint time_loc = glGetUniformLocation(prog, "time");
+    GLint resolution_loc = glGetUniformLocation(prog, "resolution");
+
+    // Buffer the shader will be outputting to
     GLuint vbo;
     glGenBuffers(1, &vbo);
 
@@ -84,21 +92,26 @@ int main()
 
     while (running)
     {
-        fps.frame_start();
+        float current_time = fps.frame_start();
 
+        // Set uniforms
+        glUniform1f(time_loc, current_time);
+        glUniform2f(resolution_loc, (float)mode.hdisplay, (float)mode.vdisplay);
+
+        // Calculate and feed vertices
         GLfloat verts[] = {
-            -1.0f, -1.0f,
-            1.0f, -1.0f,
-            -1.0f, 1.0f};
+            -1.0f, -1.0f, 0, 0,
+            1.0f, -1.0f, 0, 0,
+            -1.0f, 1.0f, 0, 0};
 
-        verts[4] = xtop;
+        verts[8] = xtop;
         xtop += 0.01;
         if (xtop > 1.0f) xtop = -1.0f;
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
         glViewport(0, 0, mode.hdisplay, mode.vdisplay);
         glClearColor(0, 0, 0, 1);
