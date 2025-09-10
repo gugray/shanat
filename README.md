@@ -16,6 +16,8 @@ The specific sketch with the balls dancing around the Lissajous curve is under `
 
 `geo` and `fps` contain utilities for vector math and frame rate management. They do reinvent the wheel, but this way the sketch has no dependencies.
 
+`webgl-proto-lissaj` is not strictly part of this sketch. It is its own thing where I prototyped the animation in WebGL+Javascript.
+
 ### Environment
 
 I've built this specifically for the Raspberry Pi 3B. I'm running the latest stable OS as of September 2025, which is based on Debian Bookworm. They've changed around a lot of things realated to display management over the last few versions, so YMMV.
