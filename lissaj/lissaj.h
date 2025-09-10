@@ -1,5 +1,8 @@
-#ifndef LISSAJ_MODEL
-#define LISSAJ_MODEL
+#ifndef LISSAJ_H
+#define LISSAJ_H
+
+extern const char *lissaj_vert;
+extern const char *lissaj_frag;
 
 struct LissajModel
 {
@@ -7,6 +10,5 @@ struct LissajModel
     static float pts[nAllPts * 4];
     static void updatePoints(float start);
 };
-
 
 #endif

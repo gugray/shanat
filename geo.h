@@ -19,6 +19,6 @@ Vec3 cross(const Vec3 &a, const Vec3 &b);
 float dot(const Vec3 &a, const Vec3 &b);
 
 void lookAt(const Vec3 &eye, const Vec3 &target, const Vec3 &up, Mat4 &mat);
-void perspective(float fov, float aspect, float near, float far, Mat4 mat);
+void perspective(float fov, float aspect, float near, float far, Mat4 &mat);
 
 #endif
