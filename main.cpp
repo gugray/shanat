@@ -62,7 +62,8 @@ int main()
     GLuint prog = glCreateProgram();
     glAttachShader(prog, vs);
     glAttachShader(prog, fs);
-    glBindAttribLocation(prog, 0, "a_pos");
+    const GLint ixPosAttribute = 0;
+    glBindAttribLocation(prog, ixPosAttribute, "a_pos");
     glLinkProgram(prog);
     GLint ok = 0;
     glGetProgramiv(prog, GL_LINK_STATUS, &ok);
@@ -83,18 +84,17 @@ int main()
     // ===================================================
 
     // Initialize model
-    // const float camDist = 3;
-    // Vec3 camPosition, target, up;
-    // camPosition.set(0, 0, camDist);
-    // target.set(0, 0, 0);
-    // up.set(0, 1, 0);
-    // Mat4 proj, view;
-    // perspective(45, (float)mode.hdisplay / (float)mode.vdisplay, 0.1, 100, proj);
-    // lookAt(camPosition, target, up, view);
+    Mat4 proj, view;
+    perspective(60, (float)mode.hdisplay / (float)mode.vdisplay, 0.1, 100, proj);
+    const float camDist = 3;
+    Vec3 camPosition, target, up;
+    target.set(0, 0, 0);
+    up.set(0, 1, 0);
 
     // Get uniform locations
     GLint time_loc = glGetUniformLocation(prog, "time");
     GLint resolution_loc = glGetUniformLocation(prog, "resolution");
+    GLint clr_loc = glGetUniformLocation(prog, "clr");
     GLint view_loc = glGetUniformLocation(prog, "view");
     GLint proj_loc = glGetUniformLocation(prog, "proj");
     // ===================================================
@@ -106,38 +106,30 @@ int main()
 
         // Non-boilerplate
         // ===================================================
-        // LissajModel::updatePoints(current_time * 0.5);
-        // const float camAngle = current_time * 1.0;
-        // camPosition.set(
-        //     camDist * sin(camAngle),
-        //     2,
-        //     camDist * cos(camAngle));
-        // lookAt(camPosition, target, up, view);
+        LissajModel::updatePoints(current_time * 0.5);
+        const float camAngle = current_time * 1.0;
+        camPosition.set(
+            camDist * sin(camAngle),
+            2,
+            camDist * cos(camAngle));
+        lookAt(camPosition, target, up, view);
 
         // Set uniforms
         glUniform1f(time_loc, current_time);
         glUniform2f(resolution_loc, (float)mode.hdisplay, (float)mode.vdisplay);
-        // glUniformMatrix4fv(view_loc, 1, GL_FALSE, view.vals);
-        // glUniformMatrix4fv(proj_loc, 1, GL_FALSE, proj.vals);
+        glUniform3f(clr_loc, 0.984, 0.475, 0.235);
+        glUniformMatrix4fv(view_loc, 1, GL_FALSE, view.vals);
+        glUniformMatrix4fv(proj_loc, 1, GL_FALSE, proj.vals);
 
-        // Calculate and feed vertices
-        GLfloat verts[] = {
-            -0.4f, -0.5f, 0, 0,
-            0.4f, -0.5f, 0, 0,
-            -0.4f, 0.5f, 0, 0,
-            -0.4f, 0.5f, 0, 0,
-            0.4f, -0.5f, 0, 0,
-            0.4f, 0.5f, 0, 0};
-
-        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(LissajModel::pts), LissajModel::pts, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(ixPosAttribute);
+        glVertexAttribPointer(ixPosAttribute, 4, GL_FLOAT, GL_FALSE, 0, 0);
         // ===================================================
 
         glViewport(0, 0, mode.hdisplay, mode.vdisplay);
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDrawArrays(GL_POINTS, 0, LissajModel::nAllPts);
         glFinish();
 
         put_on_screen();

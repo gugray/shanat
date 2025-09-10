@@ -77,7 +77,9 @@ void lookAt(const Vec3 &eye, const Vec3 &target, const Vec3 &up, Mat4 &mat)
 
 void perspective(float fov, float aspect, float near, float far, Mat4 &mat)
 {
-    const float f = tan(M_PI * 0.5 - 0.5 * fov);
+    // const float f = tan(M_PI * 0.5 - 0.5 * fov);
+    const float fovRadians = fov * M_PI / 180.0f;
+    const float f = 1.0f / tan(fovRadians * 0.5f);
     const float rangeInv = 1.0 / (near - far);
 
     mat.vals[0] = f / aspect;
@@ -98,5 +100,5 @@ void perspective(float fov, float aspect, float near, float far, Mat4 &mat)
     mat.vals[12] = 0;
     mat.vals[13] = 0;
     mat.vals[14] = near * far * rangeInv * 2;
-    mat.vals[15] = 2;
+    mat.vals[15] = 0;
 }
