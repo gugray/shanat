@@ -1,5 +1,8 @@
 #!/bin/bash
 
+
+./shader_includes.sh lissaj
+
 mkdir -p bin
 
 g++ main.cpp fps.cpp geo.cpp horrors.cpp lissaj/lissaj.cpp \

@@ -1,8 +1,7 @@
 #ifndef LISSAJ_H
 #define LISSAJ_H
 
-extern const char *lissaj_vert;
-extern const char *lissaj_frag;
+#include "shaders.h"
 
 struct LissajModel
 {
