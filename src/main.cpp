@@ -84,8 +84,9 @@ int main()
     // ===================================================
 
     // Initialize model
+    LissajModel::initColors();
     Mat4 proj, view;
-    perspective(60, (float)mode.hdisplay / (float)mode.vdisplay, 0.1, 100, proj);
+    perspective(50, (float)mode.hdisplay / (float)mode.vdisplay, 0.1, 100, proj);
     const float camDist = 3;
     Vec3 camPosition, target, up;
     target.set(0, 0, 0);
@@ -106,6 +107,7 @@ int main()
 
         // Non-boilerplate
         // ===================================================
+        LissajModel::updateColor();
         LissajModel::updatePoints(current_time * 0.5);
         const float camAngle = current_time * 1.0;
         camPosition.set(
@@ -117,7 +119,9 @@ int main()
         // Set uniforms
         glUniform1f(time_loc, current_time);
         glUniform2f(resolution_loc, (float)mode.hdisplay, (float)mode.vdisplay);
-        glUniform3f(clr_loc, 0.984, 0.475, 0.235);
+        float clrR, clrG, clrB;
+        LissajModel::getColor(clrR, clrG, clrB);
+        glUniform3f(clr_loc, clrR, clrG, clrB);
         glUniformMatrix4fv(view_loc, 1, GL_FALSE, view.vals);
         glUniformMatrix4fv(proj_loc, 1, GL_FALSE, proj.vals);
 
