@@ -38,14 +38,15 @@ void main() {
     float light = hsv[1];
     light *= clamp(1.3 - len * len, 0.0, 1.0);
     float sat = hsv[1];
-    const float cutoff = 0.45;
+    
+    const float cutoff = 0.45; // Synch frag <> vert shaders
     const float loLight = 0.1;
     const float loSat = 0.5;
 
     if (ofs > cutoff) {
         light = loLight;
         sat = loSat;
-        //gl_FragDepth = -10.0; // may be ignored in ES 2.0
+        //gl_FragDepth = -10.0; // Not in ES 2.0
     }
     else {
         light = loLight + (1.0 - loLight) * light * ofs / cutoff;

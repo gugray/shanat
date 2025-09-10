@@ -10,10 +10,15 @@ uniform mat4 view;
 varying float ofs;
 
 void main() {
+
+
     vec4 mvPosition = view * vec4(position.xyz, 1.0);
     gl_Position = proj * mvPosition;
     gl_PointSize = 80.0 / pow(gl_Position.z, 1.2);
     ofs = position.w;
+
+    const float cutoff = 0.45; // Needs to be in sync with fragment shader
+    if (ofs > cutoff) gl_Position.z += gl_Position.w * .03; 
 }
 )";
 
@@ -58,6 +63,7 @@ void main() {
     float light = hsv[1];
     light *= clamp(1.3 - len * len, 0.0, 1.0);
     float sat = hsv[1];
+    
     const float cutoff = 0.45;
     const float loLight = 0.1;
     const float loSat = 0.5;
