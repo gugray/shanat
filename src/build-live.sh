@@ -2,11 +2,9 @@
 
 mkdir -p ../bin
 
-./shader-includes.sh shanat-sketches/lissaj
-
-g++ shanat-sketches/main.cpp shanat-sketches/lissaj/lissaj.cpp \
+g++ shanat-live/main.cpp shanat-live/hot_file.cpp \
     shanat-shared/fps.cpp shanat-shared/geo.cpp shanat-shared/horrors.cpp \
-    -o ../bin/shanat-sketches \
+    -o ../bin/shanat-live \
     -std=c++11 \
     -I/usr/include/drm -I/usr/include/libdrm \
     -lEGL -lGLESv2 -lgbm -ldrm -lpthread -lm

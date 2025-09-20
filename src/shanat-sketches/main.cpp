@@ -1,6 +1,6 @@
-#include "fps.h"
-#include "geo.h"
-#include "horrors.h"
+#include "../shanat-shared/fps.h"
+#include "../shanat-shared/geo.h"
+#include "../shanat-shared/horrors.h"
 
 #include "lissaj/lissaj.h"
 

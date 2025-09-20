@@ -1,7 +1,7 @@
 #ifndef LISSAJ_H
 #define LISSAJ_H
 
-#include "../geo.h"
+#include "../../shanat-shared/geo.h"
 #include "shaders.h"
 
 struct LissajModel
