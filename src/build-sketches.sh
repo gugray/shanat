@@ -2,13 +2,15 @@
 
 mkdir -p bin
 
-./shader_includes.sh src/lissaj
+./shader-includes.sh shanat-sketches/lissaj
 
-cd src
+cd shanat-sketches
 
-g++ main.cpp fps.cpp geo.cpp horrors.cpp lissaj/lissaj.cpp \
+g++ main.cpp fps.cpp geo.cpp horrors.cpp \
+  lissaj/lissaj.cpp \
   -o ../bin/shanat \
   -std=c++11 -I/usr/include/drm \
   -lEGL -lGLESv2 -lgbm -ldrm -lpthread -lm
 
 cd ..
+
