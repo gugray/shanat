@@ -1,6 +1,7 @@
 #ifndef FPS_H
 #define FPS_H
 
+#include <sys/time.h>
 #include <csignal>
 
 class FPS

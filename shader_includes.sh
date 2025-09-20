@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-pushd "$1" > /dev/null || { echo "Failed to cd into $1"; exit 1; }
+#pushd "$1" > /dev/null || { echo "Failed to cd into $1"; exit 1; }
 
 awk '
 # Check if the line starts with SRC
@@ -15,4 +15,4 @@ awk '
 { print }
 ' shader_template.h > shaders.h
 
-popd > /dev/null
+#popd > /dev/null

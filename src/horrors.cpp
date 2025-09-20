@@ -1,5 +1,6 @@
 #include "horrors.h"
 
+#include <unistd.h>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
@@ -88,11 +89,11 @@ static drmModeConnectorPtr get_composite_connector()
         drmModeConnectorPtr c = drmModeGetConnector(drm_fd, conn_id);
         if (!c) continue;
 
-        if (c->connector_type != DRM_MODE_CONNECTOR_Composite)
-        {
-            drmModeFreeConnector(c);
-            continue;
-        }
+        //if (c->connector_type != DRM_MODE_CONNECTOR_Composite)
+        //{
+        //    drmModeFreeConnector(c);
+        //    continue;
+        //}
         if (c->count_modes == 0)
         {
             fprintf(stderr, "Composite connector has no modes\n");

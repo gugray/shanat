@@ -1,5 +1,6 @@
 #include "fps.h"
 
+#include <unistd.h>
 #include <cstdio>
 #include <math.h>
 
