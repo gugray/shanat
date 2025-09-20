@@ -1,5 +1,7 @@
 #include "horrors.h"
 
+#include <unistd.h>
+
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
@@ -67,42 +69,55 @@ void cleanup_horrors()
     if (drm_fd >= 0) close(drm_fd);
 }
 
-static void list_composite_connectors()
+static void list_connectors()
 {
-    fprintf(stderr, "No connected composite connector found. Available connectors:\n");
+    fprintf(stderr, "Available connectors:\n");
     for (int i = 0; i < resources->count_connectors; ++i)
     {
         drmModeConnectorPtr c = drmModeGetConnector(drm_fd, resources->connectors[i]);
         if (!c) continue;
-        printf("  id %u type %u connection %d modes %d\n",
+        printf("ID: %u type: %u connection: %d modes: %d\n",
                c->connector_id, c->connector_type, c->connection, c->count_modes);
         drmModeFreeConnector(c);
     }
 }
 
-static drmModeConnectorPtr get_composite_connector()
+static drmModeConnectorPtr get_preferred_connector()
 {
+    list_connectors();
+
+    // Prefer composite connector, but will use first OK one otherwise
+    drmModeConnectorPtr first_connector = nullptr;
+    drmModeConnectorPtr composite_connector = nullptr;
+
     for (int i = 0; i < resources->count_connectors; ++i)
     {
         uint32_t conn_id = resources->connectors[i];
         drmModeConnectorPtr c = drmModeGetConnector(drm_fd, conn_id);
         if (!c) continue;
-
-        if (c->connector_type != DRM_MODE_CONNECTOR_Composite)
+        if (c->count_modes == 0)
         {
             drmModeFreeConnector(c);
             continue;
         }
-        if (c->count_modes == 0)
-        {
-            fprintf(stderr, "Composite connector has no modes\n");
-            drmModeFreeConnector(c);
-            exit_with_cleanup(1);
-        }
-
-        return c;
+        if (composite_connector == nullptr && c->connector_type == DRM_MODE_CONNECTOR_Composite)
+            composite_connector = c;
+        else if (first_connector == nullptr)
+            first_connector = c;
+        else drmModeFreeConnector(c);
     }
-    list_composite_connectors();
+    if (composite_connector != nullptr)
+    {
+        if (first_connector != nullptr) drmModeFreeConnector(first_connector);
+        return composite_connector;
+    }
+    if (first_connector != nullptr)
+    {
+        if (composite_connector != nullptr) drmModeFreeConnector(composite_connector);
+        return first_connector;
+    }
+
+    fprintf(stderr, "No connector found\n");
     exit_with_cleanup(1);
     return nullptr;
 }
@@ -176,7 +191,7 @@ void init_horrors()
     resources = drmModeGetResources(drm_fd);
     if (!resources) die("drmModeGetResources");
 
-    conn = get_composite_connector();
+    conn = get_preferred_connector();
     if (conn->encoder_id) enc = drmModeGetEncoder(drm_fd, conn->encoder_id);
 
     // Save current CRTC (if any) so we can restore later

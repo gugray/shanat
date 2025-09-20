@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <math.h>
+#include <unistd.h>
 
 FPS::FPS(int target_fps)
     : target_fps(target_fps)
