@@ -1,6 +1,7 @@
 #include "../shanat-shared/fps.h"
 #include "../shanat-shared/geo.h"
 #include "../shanat-shared/horrors.h"
+#include "arg_parse.h"
 #include "hot_file.h"
 
 #include <csignal>
@@ -9,9 +10,11 @@
 #include <math.h>
 #include <memory>
 #include <stdint.h>
+#include <string>
 #include <unistd.h>
 
-static const char *frag_glsl_file = "frag.glsl";
+static int target_fps;
+static std::string frag_glsl_file;
 static int64_t frag_glsl_modif;
 static std::string frag_glsl_content;
 
@@ -26,13 +29,55 @@ static void sighandler(int)
     running = false;
 }
 
+static void parse_args(int argc, const char *argv[])
+{
+    auto parser = ArgumentParser("shanat-live");
+    parser.add_argument("help", "--help", "", "Displays this help message");
+    parser.add_argument("fps", "--fps", "", "Target FPS (default: 25)", STORE, "25");
+    parser.add_argument("frag", "--frag", "", "Fragment shader GLSL file (input)", STORE);
+    parser.add_argument("resp", "--resp", "", "Update response file (output)", STORE);
+
+    bool success = parser.parse(argv, argc, stdout);
+    if (!success || parser.get("help").is_set)
+    {
+        parser.print_usage(stdout);
+        exit(success ? 0 : 1);
+    }
+
+    bool ok = true;
+
+    auto fps_val = parser.get("fps").value;
+    target_fps = atoi(fps_val.c_str());
+    if (target_fps <= 0)
+    {
+        fprintf(stderr, "FPS value must be positive integer; got '%s'\n", fps_val.c_str());
+        ok = false;
+    }
+
+    auto frag_val = parser.get("frag");
+    if (frag_val.is_set) frag_glsl_file.assign(frag_val.value);
+    else
+    {
+        fprintf(stderr, "Fragment shader GLSL file is required\n");
+        ok = false;
+    }
+
+    if (!ok)
+    {
+        parser.print_usage(stdout);
+        exit(1);
+    }
+}
+
 static void main_inner();
 static void report_shader_link_error(GLuint prog);
 static GLuint compile_shader(GLenum type, const char *src, bool exit_on_error);
 static void update_program();
 
-int main()
+int main(int argc, const char *argv[])
 {
+    parse_args(argc, argv);
+
     signal(SIGINT, sighandler);
     signal(SIGTERM, sighandler);
 
@@ -48,12 +93,12 @@ static void main_inner()
     init_horrors();
 
     // FPS control
-    FPS fps(25);
+    FPS fps(target_fps);
 
     // Fragment shader source
-    HotFile hf(frag_glsl_file);
+    HotFile hf(frag_glsl_file.c_str());
     hf.check_update(frag_glsl_content, frag_glsl_modif);
-    printf("Watching shader file: %s\n", frag_glsl_file);
+    printf("Watching shader file: %s\n", frag_glsl_file.c_str());
     if (frag_glsl_modif == 0) printf("File appears to be missing\n");
 
     // Compile shaders, link program
