@@ -1,8 +1,6 @@
 {
   "files.associations": {
-    "*.json": "jsonc",
-    "*.tidal": "haskell",
-    "cstdio": "cpp"
+    "*.json": "jsonc"
   },
   "editor.formatOnSave": true,
   "C_Cpp.clang_format_path": "/usr/bin/clang-format"
