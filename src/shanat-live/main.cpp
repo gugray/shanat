@@ -134,6 +134,8 @@ static void main_inner()
         {
             printf("File updated                                               \n");
             update_program();
+            time_loc = glGetUniformLocation(prog, "time");
+            resolution_loc = glGetUniformLocation(prog, "resolution");
         }
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
