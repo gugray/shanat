@@ -5,6 +5,8 @@ import cors from "cors";
 import { promises as fs } from "fs";
 import { createReadStream } from 'fs';
 import * as path from "path";
+import {truncate} from "../src-common/utils.js";
+import * as PROT from "../src-common/protocol.js";
 
 let editorSocket = null;
 
@@ -26,7 +28,7 @@ export async function run(port) {
 
   // Upgrade connections to web socker
   server.on("upgrade", (request, socket, head) => {
-    if (request.url === "/editor") {
+    if (request.url === PROT.kEditorSocketPath) {
       wsEditor.handleUpgrade(request, socket, head, (ws) => {
         wsEditor.emit("connection", ws, request);
       });
@@ -75,12 +77,4 @@ function listen(server, port) {
 }
 
 async function handleEditorMessage(msg) {
-}
-
-export function truncate(str, num) {
-  if (str.length > num) {
-    return str.slice(0, num) + "...";
-  } else {
-    return str;
-  }
 }
