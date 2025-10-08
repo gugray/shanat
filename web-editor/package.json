@@ -1,0 +1,21 @@
+{
+  "name": "shanat-web-editor",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "Shader live coding environment, for a CRT screen and a Raspberry Pi.",
+  "license": "WTFPL",
+  "author": {
+    "name": "Gábor L Ugray",
+    "email": "gabor.reads.this@gmail.com"
+  },
+  "dependencies": {
+    "codemirror": "^5.65.20",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@jgoz/esbuild-plugin-livereload": "^2.1.3",
+    "esbuild": "^0.25.10"
+  }
+}
