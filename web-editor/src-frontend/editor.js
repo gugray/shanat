@@ -24,8 +24,10 @@ class Editor {
   constructor(parent, mode) {
 
     this.parent = parent;
-    this.onSubmit = null;
-    this.onToggleAnimate = null;
+    this.revision = 0;
+    this.onChange = null;
+    this.onApply = null;
+    this.onSave = null;
 
     const spaces = mode == "x-shader/x-fragment" ? 4 : 2;
 
@@ -47,14 +49,16 @@ class Editor {
       lineWrapping: false,
       autofocus: true,
       extraKeys: {
-        "Cmd-Enter": () => this.onSubmit && this.onSubmit(),
-        "Ctrl-Enter": () => this.onSubmit && this.onSubmit(),
-        "Shift-Cmd-Enter": () => this.onToggleAnimate && this.onToggleAnimate(),
-        "Shift-Ctrl-Enter": () => this.onToggleAnimate && this.onToggleAnimate(),
+        "Cmd-Enter": () => this.onApply && this.onApply(),
+        "Ctrl-Enter": () => this.onApply && this.onApply(),
+        "Cmd-S": () => this.onSave && this.onSave(),
+        "Ctrl-S": () => this.onSave && this.onSave(),
       },
     });
 
     this.cm.on("change", (e) => {
+      ++this.revision;
+      if (this.onChange) this.onChange();
     });
 
     this.cm.on("focus", () => {

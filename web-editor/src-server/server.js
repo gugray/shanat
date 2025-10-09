@@ -8,7 +8,7 @@ import * as path from "path";
 import {truncate} from "../src-common/utils.js";
 import * as PROT from "../src-common/protocol.js";
 
-let editorSocket = null;
+let webEditorSocket = null;
 
 // This is the entry point: starts servers
 export async function run(port) {
@@ -41,15 +41,16 @@ export async function run(port) {
   // Web socket event handlers
   wsEditor.on("connection", (ws) => {
     console.log("Editor connected");
-    if (editorSocket) {
+    if (webEditorSocket) {
       console.log("There is already an editor connection; closing it.");
-      editorSocket.close();
+      webEditorSocket.close();
     }
-    editorSocket = ws;
+    webEditorSocket = ws;
+    sendSketchList();
 
     ws.on("close", () => {
       console.log("Editor disconnected");
-      editorSocket = null;
+      webEditorSocket = null;
     });
 
     ws.on("message", (msgStr) => {
@@ -77,4 +78,54 @@ function listen(server, port) {
 }
 
 async function handleEditorMessage(msg) {
+  if (msg.action == PROT.ACTION.GetSketch) await sckGetSketch(msg);
+  else if (msg.action == PROT.ACTION.SaveSketch) await sckSaveSketch(msg);
+}
+
+async function sckSaveSketch(msg) {
+  const resp = {
+    action: PROT.ACTION.SaveSketchResult,
+    revision: msg.revision,
+  }
+  const outStr = JSON.stringify(resp);
+  webEditorSocket.send(outStr);
+}
+
+function sendSketchList() {
+  const resp = {
+    action: PROT.ACTION.SketchList,
+    items: [
+      {
+        name: "lazy-afternoon",
+        title: "Lazy Afternoon",
+        changedAt: new Date().toISOString(),
+        changedBy: "shady artist",
+      },
+      {
+        name: "fizzy-balls",
+        title: "Fizzy Balls",
+        changedAt: new Date().toISOString(),
+        changedBy: "shady artist",
+      },
+    ],
+  }
+  const outStr = JSON.stringify(resp);
+  webEditorSocket.send(outStr);
+}
+
+async function sckGetSketch(msg) {
+  // TODO: implement for real lol
+  const resp = { action: PROT.ACTION.Sketch };
+  if (msg.name == "fizzy-balls") {
+    resp.sketchData= {
+        name: msg.name,
+        title: "Fizzy Balls",
+        frag: "void foo() {}\n",
+      };
+  }
+  else {
+    resp.error = `Sketch '${msg.name}' not found`;
+  }
+  const outStr = JSON.stringify(resp);
+  webEditorSocket.send(outStr);
 }

@@ -19,10 +19,18 @@
 <app>
   <sketchlist>
     <h2>Sketches</h2>
+    <items></items>
   </sketchlist>
   <sketch>
     <sketchHeader>
       <h2>Awesomeness</h2>
+      <dirty>*</dirty>
+      <expander>&nbsp;</expander>
+      <button id="btnSave" class="large" title="Save (Ctrl+S)"><svg><use href="#disk"></use></svg></button>
+      <button id="btnApply" class="large" title="Apply (Ctrl+Enter)"><svg><use href="#check"></use></svg></button>
+      <div> &nbsp; &nbsp; &nbsp; </div>
+      <userName>bashful coder</userName>
+      <button class="small" title="Change name"><svg><use href="#profile"></use></svg></button>
     </sketchHeader>
     <sketchSource id="theEditor"></sketchSource>
   </sketch>

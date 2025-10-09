@@ -1,6 +1,7 @@
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
-import {truncate} from "../src-common/utils.js";
+import {truncate, esc} from "../src-common/utils.js";
 import * as PROT from "../src-common/protocol.js";
+import {defaultSketch} from "./defaultSketch.js";
 import {Editor} from "./editor.js";
 
 const logComms = true;
@@ -11,7 +12,8 @@ const sketchData = {
   title: null,
   frag: null,
 };
-let elmTitle;
+let elmSketchListItems;
+let elmTitle, elmSketch;
 let socket;
 let editor;
 
@@ -23,9 +25,7 @@ async function init() {
   initSocket();
 
   if (sketchData.title == null) return;
-
-  elmTitle.innerText = sketchData.title;
-  editor.cm.doc.setValue(sketchData.frag);
+  else displaySketch();
 }
 
 function parseLocation() {
@@ -50,8 +50,18 @@ function fillNewSketch() {
     style: "capital",
   });
   sketchData.title = title;
-  sketchData.name = title.toLowerCase().replaceAll(" ", "-");
-  sketchData.frag = "foo(); // bar";
+  sketchData.name = getNameFromTitle(title);
+  sketchData.frag = defaultSketch;
+}
+
+function displaySketch() {
+  elmTitle.innerText = sketchData.title;
+  editor.cm.doc.setValue(sketchData.frag);
+  elmSketch.classList.remove("dirty");
+}
+
+function getNameFromTitle(title) {
+  return title.toLowerCase().replaceAll(" ", "-");
 }
 
 function retrieveSketch(name) {
@@ -63,7 +73,32 @@ function retrieveSketch(name) {
 }
 
 function initGui() {
+
+  elmSketchListItems = document.querySelector("sketchList items");
   elmTitle = document.querySelector("sketchHeader h2");
+  elmSketch = document.querySelector("sketch");
+
+  document.getElementById("btnApply").addEventListener("click", apply);
+  document.getElementById("btnSave").addEventListener("click", save);
+  editor.onApply = apply;
+  editor.onSave = save;
+  editor.onChange = () => elmSketch.classList.add("dirty");
+}
+
+function apply() {
+  sketchData.frag = editor.cm.doc.getValue();
+  focusEditor();
+}
+
+function save() {
+  sketchData.frag = editor.cm.doc.getValue();
+  const msg = {
+    action: PROT.ACTION.SaveSketch,
+    sketchData: sketchData,
+    revision: editor.revision,
+  };
+  socket.send(JSON.stringify(msg));
+  focusEditor();
 }
 
 function createEditor(content) {
@@ -72,10 +107,12 @@ function createEditor(content) {
   elmHost.innerHTML = '<div class="editorBg"></div>';
 
   editor = new Editor(elmHost, "x-shader/x-fragment");
-  // editor.onSubmit = () => submitShader(name);
-
   editor.cm.doc.setValue(content);
   editor.cm.refresh();
+  editor.cm.display.input.focus();
+}
+
+function focusEditor() {
   editor.cm.display.input.focus();
 }
 
@@ -107,8 +144,39 @@ function initSocket() {
 }
 
 function handleSocketMessage(msg) {
+  if (msg.action == PROT.ACTION.Sketch) msgSketch(msg);
+  else if (msg.action == PROT.ACTION.SaveSketchResult) msgSaveSketchResult(msg);
+  else if (msg.action == PROT.ACTION.SketchList) msgSketchList(msg);
 }
 
-function getSocketUrl() {
-  return "ws://" + window.location.hostname + ":8090/editor";
+function msgSketch(msg) {
+  if (msg.error) {
+    alert(`Sorry; could not load this sketch! The server said:\n\n${msg.error}`);
+    window.location.pathname = "/";
+    return;
+  }
+  sketchData.name = msg.sketchData.name;
+  sketchData.title = msg.sketchData.title;
+  sketchData.frag = msg.sketchData.frag;
+  displaySketch();
+}
+
+function msgSaveSketchResult(msg) {
+  if (editor.revision == msg.revision) elmSketch.classList.remove("dirty");
+}
+
+function msgSketchList(msg) {
+  let html = "";
+  for (const item of msg.items) {
+    const d = new Date(item.changedAt);
+    const changedAt = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` +
+      ` ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    html += `
+    <a href="/sketch/${encodeURIComponent(item.name)}">
+      <h3>${esc(item.title)}</h3>
+      <changedAt>${changedAt}</changedAt>
+      <changedBy>${esc(item.changedBy)}</changedBy>
+    </a>`;
+  }
+  elmSketchListItems.innerHTML = html;
 }

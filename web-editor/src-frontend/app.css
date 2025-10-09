@@ -61,29 +61,53 @@ app {
 }
 
 sketchlist {
-  display: block; height: 100%; padding: 20px;
+  display: flex; flex-direction: column; align-items: stretch;
+  height: 100%; max-height: 100%; padding: 10px 0 0 10px; overflow-y: hidden;
   background-color: var(--clrEditorBg); border: 1px solid var(--clrTextFaintest);
+  & h2 { margin: 0 0 20px 0; }
+  & items { flex-grow: 1; overflow-y: scroll; display: block; }
+  & a { display: block; margin-bottom: 20px; color: inherit; text-decoration: none; }
+  & a:hover { text-decoration: none; }
+  & h3 { margin: 0; font-size: var(--fntSizeBase); color: var(--clrControl); }
+  & a:hover h3 { color: var(--clrControlHover); }
+  & changedAt { display: block; }
+  & changedBy { display: block; font-style: italic; }
 }
 
 sketch {
-  height: 100%; display: flex; flex-direction: column; gap: 10px;
+  height: 100%; max-height: 100%; display: flex; flex-direction: column; gap: 10px; align-content: stretch;
 }
 
 sketchHeader {
-  display: block; height: 74px; padding: 20px;
+  height: 54px; padding: 10px 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 4px;
   background-color: var(--clrEditorBg); border: 1px solid var(--clrTextFaintest);
+  font-size: var(--fntSizeTitle);
 }
 
+dirty { display: none; }
+sketch.dirty dirty { display: block; }
+
 h2 { margin: 0; font-size: var(--fntSizeHeading); }
+expander { flex-grow: 1; }
+button {
+  display: block; border: none; margin: 0; padding: 0; background-color: transparent;
+  & svg { width: 100%; height: 100%; }
+  & svg * { stroke: var(--clrControl); }
+  &:hover svg * { stroke: var(--clrControlHover); }
+  &[disabled] svg * { stroke: var(--clrTextFainter); }
+}
+button.small { width: 20px; height: 20px;}
+button.large { width: 32px; height: 32px;}
 
 sketchSource {
-  height: 100%; position: relative;
+  height: 100%; max-height: 100%; position: relative; overflow-y: hidden;;
   background-color: var(--clrEditorBg); border: 1px solid var(--clrTextFaintest);
   font-family: var(--fntMono);
   & .CodeMirror-linenumber { color: var(--clrTextFainter); }
 }
 .editorBg {
-  position: absolute; width: 100%; height: 100%;
+  position: absolute; width: 100%; height: 100%; max-height: 100%;
   background-color: black; opacity: 0.0;
   transition: background-color ease-out 1.5s, opacity  ease-out 1.5s;
 }
