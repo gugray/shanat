@@ -2,6 +2,7 @@ import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generato
 import {truncate, esc} from "../src-common/utils.js";
 import * as PROT from "../src-common/protocol.js";
 import {defaultSketch} from "./defaultSketch.js";
+import {getUserName, setUserName} from "./userName.js";
 import {Editor} from "./editor.js";
 
 const logComms = true;
@@ -13,7 +14,9 @@ const sketchData = {
   frag: null,
 };
 let elmSketchListItems;
-let elmTitle, elmSketch;
+let elmTitle, elmUserName, elmBtnChangeName, elmSketch;
+let elmModal, elmNoSuchSketch, elmChangeTitle, elmChangeName;
+let elmTxtName;
 let socket;
 let editor;
 
@@ -23,6 +26,8 @@ async function init() {
   createEditor("~~ hang tight; loading ~~");
   initGui();
   initSocket();
+
+  setTimeout(() => showModal(elmChangeName), 1000);
 
   if (sketchData.title == null) return;
   else displaySketch();
@@ -76,7 +81,28 @@ function initGui() {
 
   elmSketchListItems = document.querySelector("sketchList items");
   elmTitle = document.querySelector("sketchHeader h2");
+  elmUserName = document.querySelector("sketchHeader userName");
+  elmBtnChangeName = document.getElementById("btnChangeName");
   elmSketch = document.querySelector("sketch");
+  elmModal = document.querySelector("modal");
+  elmNoSuchSketch = document.getElementById("noSuchSketch");
+  elmChangeTitle = document.getElementById("changeTitle");
+  elmChangeName = document.getElementById("changeName");
+  elmTxtName = document.getElementById("txtName");
+
+  elmUserName.innerText = getUserName();
+  elmBtnChangeName.addEventListener("click", () => showModal(elmChangeName));
+
+  elmModal.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === 'Escape') {
+      e.stopPropagation();
+      e.preventDefault();
+      if (e.key == "Enter") handleModalOK();
+      else if (e.key == "Escape") handleModalCancel();
+    }
+  });
+  document.querySelectorAll("modal .ok").forEach(e => e.addEventListener("click", handleModalOK));
+  document.querySelectorAll("modal .cancel").forEach(e => e.addEventListener("click", handleModalCancel));
 
   document.getElementById("btnApply").addEventListener("click", apply);
   document.getElementById("btnSave").addEventListener("click", save);
@@ -124,6 +150,40 @@ function flashEditor(className) {
   setTimeout(() => elmBg.classList.remove(className), 200);
 }
 
+function showModal(elm) {
+  elmModal.classList.add("visible");
+  elm.classList.add("visible");
+  elmModal.focus();
+  if (elm === elmNoSuchSketch) return;
+  else if (elm === elmChangeName) {
+    elmTxtName.value = elmUserName.innerText;
+    elmTxtName.focus();
+    elmTxtName.select();
+  }
+}
+
+function closeModal() {
+  document.querySelector("modal content.visible").classList.remove("visible");
+  document.querySelector("modal").classList.remove("visible");
+  editor.cm.focus();
+}
+
+function handleModalOK() {
+  const elm = document.querySelector("modal content.visible");
+  if (!elm || elm === elmNoSuchSketch) return;
+  if (elm === elmChangeName) {
+    setUserName(elmTxtName.value.trim());
+    elmUserName.innerText = getUserName();
+    closeModal();
+  }
+}
+
+function handleModalCancel() {
+  const elm = document.querySelector("modal content.visible");
+  if (!elm || elm === elmNoSuchSketch) return;
+  closeModal();
+}
+
 function initSocket() {
   const socketUrl = `ws://${window.location.hostname}:8090${PROT.kEditorSocketPath}`;
   socket = new WebSocket(socketUrl);
@@ -151,8 +211,8 @@ function handleSocketMessage(msg) {
 
 function msgSketch(msg) {
   if (msg.error) {
-    alert(`Sorry; could not load this sketch! The server said:\n\n${msg.error}`);
-    window.location.pathname = "/";
+    document.getElementById("sketchLoadError").innerText = msg.error;
+    showModal(elmNoSuchSketch);
     return;
   }
   sketchData.name = msg.sketchData.name;

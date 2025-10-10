@@ -29,12 +29,42 @@
       <button id="btnSave" class="large" title="Save (Ctrl+S)"><svg><use href="#disk"></use></svg></button>
       <button id="btnApply" class="large" title="Apply (Ctrl+Enter)"><svg><use href="#check"></use></svg></button>
       <div> &nbsp; &nbsp; &nbsp; </div>
-      <userName>bashful coder</userName>
-      <button class="small" title="Change name"><svg><use href="#profile"></use></svg></button>
+      <userName></userName>
+      <button class="small" title="Change name" id="btnChangeName"><svg><use href="#profile"></use></svg></button>
     </sketchHeader>
     <sketchSource id="theEditor"></sketchSource>
   </sketch>
 </app>
+
+<modal tabIndex="-1">
+  <content id="noSuchSketch">
+    <h2>Sketch not found</h2>
+    <p>
+      Sorry; could not load this sketch! The server said:<br>
+      <code><span id="sketchLoadError"></span></code>
+    </p>
+    <p>
+      Let's <a href="/">start from scratch</a>.
+    </p>
+  </content>
+  <content id="changeTitle">
+    <h2>Change sketch title</h2>
+
+  </content>
+  <content id="changeName">
+    <h2>Change your name</h2>
+    <p>
+      <input type="text" id="txtName" value="mwhaha" tabindex="0">
+      <button class="ok">OK</button>
+      or <a href="#" class="cancel">cancel</a>
+    </p>
+    <p>
+      User names do not belong to an account and they don't need to be unique.
+      You can enter anything here, and it will be saved along with your changes to
+      any sketch.
+    </p>
+  </content>
+</modal>
 
 </body>
 </html>

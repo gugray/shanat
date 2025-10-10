@@ -31,13 +31,7 @@
 a { color: #8bb3e0; text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-button {
-  display: block; border: none; margin: 0; padding: 0; background-color: transparent;
-  & svg { width: 100%; height: 100%; }
-  & svg * { stroke: var(--clrControl); }
-  &:hover svg * { stroke: var(--clrControlHover); }
-  &[disabled] svg * { stroke: var(--clrTextFainter); }
-}
+code { font-size: 90%; }
 
 & input[type=text] {
   box-shadow: none; -webkit-box-shadow: none; -webkit-appearance: none; outline: none;
@@ -56,8 +50,37 @@ body {
 app {
   margin: 0 auto; width: 100%; max-width: 1200px; height: 100%;
   display: flex; align-items: flex-start; gap: 10px;
+  & button {
+    display: block; border: none; margin: 0; padding: 0; background-color: transparent;
+    & svg { width: 100%; height: 100%; }
+    & svg * { stroke: var(--clrControl); }
+    &:hover svg * { stroke: var(--clrControlHover); }
+    &[disabled] svg * { stroke: var(--clrTextFainter); }
+  }
+  & button.small { width: 20px; height: 20px;}
+  & button.large { width: 32px; height: 32px;}
   & sketchlist { width: 250px; }
   & sketch { flex-grow: 1; }
+}
+
+modal {
+  display: none; &.visible { display: block; }
+  position: fixed; width: 100%; height: 100%; top: 0; left: 0;
+  padding: 50px 20px;
+  background-color: #00000080; color: var(--clrText);
+}
+
+modal content {
+  display: none; &.visible { display: block; }
+  width: 100%; max-width: 500px; margin: 0 auto;
+  background-color: var(--clrPanelBgLighter); border: 1px solid var(--clrTextFainter);
+  padding: 20px;
+  & h2 { margin: 0 0 20px 0; font-size: var(--fntSizeHeading); }
+  & p { margin: 10px 0 10px 0; }
+  & button { margin: 0; padding: 4px 10px; border-radius: 2px; }
+  & input[type=text] {
+    border: 1px solid var(--clrTextFainter); font-size: var(--fntSizeTitle); padding: 5px;
+  }
 }
 
 sketchlist {
@@ -90,15 +113,6 @@ sketch.dirty dirty { display: block; }
 
 h2 { margin: 0; font-size: var(--fntSizeHeading); }
 expander { flex-grow: 1; }
-button {
-  display: block; border: none; margin: 0; padding: 0; background-color: transparent;
-  & svg { width: 100%; height: 100%; }
-  & svg * { stroke: var(--clrControl); }
-  &:hover svg * { stroke: var(--clrControlHover); }
-  &[disabled] svg * { stroke: var(--clrTextFainter); }
-}
-button.small { width: 20px; height: 20px;}
-button.large { width: 32px; height: 32px;}
 
 sketchSource {
   height: 100%; max-height: 100%; position: relative; overflow-y: hidden;;
