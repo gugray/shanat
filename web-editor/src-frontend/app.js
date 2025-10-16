@@ -14,9 +14,9 @@ const sketchData = {
   frag: null,
 };
 let elmSketchListItems;
-let elmTitle, elmUserName, elmBtnChangeName, elmSketch;
+let elmTitle, elmBtnChangeTitle, elmUserName, elmBtnChangeName, elmSketch;
 let elmModal, elmNoSuchSketch, elmChangeTitle, elmChangeName;
-let elmTxtName;
+let elmTxtName, elmTxtTitle;
 let socket;
 let editor;
 
@@ -27,7 +27,7 @@ async function init() {
   initGui();
   initSocket();
 
-  setTimeout(() => showModal(elmChangeName), 1000);
+  setTimeout(() => showModal(elmChangeTitle), 1000);
 
   if (sketchData.title == null) return;
   else displaySketch();
@@ -81,6 +81,7 @@ function initGui() {
 
   elmSketchListItems = document.querySelector("sketchList items");
   elmTitle = document.querySelector("sketchHeader h2");
+  elmBtnChangeTitle = document.getElementById("btnChangeTitle");
   elmUserName = document.querySelector("sketchHeader userName");
   elmBtnChangeName = document.getElementById("btnChangeName");
   elmSketch = document.querySelector("sketch");
@@ -89,9 +90,11 @@ function initGui() {
   elmChangeTitle = document.getElementById("changeTitle");
   elmChangeName = document.getElementById("changeName");
   elmTxtName = document.getElementById("txtName");
+  elmTxtTitle = document.getElementById("txtTitle");
 
   elmUserName.innerText = getUserName();
   elmBtnChangeName.addEventListener("click", () => showModal(elmChangeName));
+  elmBtnChangeTitle.addEventListener("click", () => showModal(elmChangeTitle));
 
   elmModal.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === 'Escape') {
@@ -154,11 +157,17 @@ function showModal(elm) {
   elmModal.classList.add("visible");
   elm.classList.add("visible");
   elmModal.focus();
+  elm.querySelectorAll(".feedback").forEach(e => e.classList.remove("visible"));
   if (elm === elmNoSuchSketch) return;
   else if (elm === elmChangeName) {
     elmTxtName.value = elmUserName.innerText;
     elmTxtName.focus();
     elmTxtName.select();
+  }
+  else if (elm === elmChangeTitle) {
+    elmTxtTitle.value = sketchData.title;
+    elmTxtTitle.focus();
+    elmTxtTitle.select();
   }
 }
 
@@ -172,9 +181,25 @@ function handleModalOK() {
   const elm = document.querySelector("modal content.visible");
   if (!elm || elm === elmNoSuchSketch) return;
   if (elm === elmChangeName) {
-    setUserName(elmTxtName.value.trim());
+    setUserName(elmTxtName.value);
     elmUserName.innerText = getUserName();
     closeModal();
+  }
+  else if (elm === elmChangeTitle) {
+    const newTitle = elmTxtTitle.value.trim();
+    if (newTitle == "") {
+      closeModal();
+      return;
+    }
+    const newName = getNameFromTitle(newTitle);
+    elm.querySelector(".feedback.progress").classList.add("visible");
+    const msg = {
+      action: PROT.ACTION.RenameSketch,
+      name: sketchData.name,
+      newName: newName,
+      newTitle: newTitle,
+    };
+    socket.send(JSON.stringify(msg));
   }
 }
 
@@ -206,6 +231,7 @@ function initSocket() {
 function handleSocketMessage(msg) {
   if (msg.action == PROT.ACTION.Sketch) msgSketch(msg);
   else if (msg.action == PROT.ACTION.SaveSketchResult) msgSaveSketchResult(msg);
+  else if (msg.action == PROT.ACTION.RenameSketchResult) msgRenameSketchResult(msg);
   else if (msg.action == PROT.ACTION.SketchList) msgSketchList(msg);
 }
 
@@ -223,6 +249,17 @@ function msgSketch(msg) {
 
 function msgSaveSketchResult(msg) {
   if (editor.revision == msg.revision) elmSketch.classList.remove("dirty");
+}
+
+function msgRenameSketchResult(msg) {
+  if (msg.error) {
+    if (!elmChangeTitle.classList.contains("visible")) return;
+    elmChangeTitle.querySelectorAll(".feedback").forEach(e => e.classList.remove("visible"));
+    elmChangeTitle.querySelector(".feedback.error").classList.add("visible");
+    return;
+  }
+  // TODO: read name, redirect
+  closeModal();
 }
 
 function msgSketchList(msg) {

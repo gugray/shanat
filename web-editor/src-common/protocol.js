@@ -8,4 +8,6 @@ export const ACTION = {
   SaveSketchResult: "save-sketch-result",
   ApplySketch: "apply-sketch",
   ApplySketchResult: "apply-sketch-result",
+  RenameSketch: "rename-sketch",
+  RenameSketchResult: "rename-sketch-result",
 };

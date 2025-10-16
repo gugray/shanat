@@ -80,6 +80,7 @@ function listen(server, port) {
 async function handleEditorMessage(msg) {
   if (msg.action == PROT.ACTION.GetSketch) await sckGetSketch(msg);
   else if (msg.action == PROT.ACTION.SaveSketch) await sckSaveSketch(msg);
+  else if (msg.action == PROT.ACTION.RenameSketch) await sckRenameSketch(msg);
 }
 
 async function sckSaveSketch(msg) {
@@ -90,6 +91,18 @@ async function sckSaveSketch(msg) {
   const outStr = JSON.stringify(resp);
   webEditorSocket.send(outStr);
 }
+
+async function sckRenameSketch(msg) {
+  const resp = {
+    action: PROT.ACTION.RenameSketchResult,
+    error: "not implemented"
+  }
+  // TODO
+  if (msg.newName == "barf") delete resp.error;
+  const outStr = JSON.stringify(resp);
+  webEditorSocket.send(outStr);
+}
+
 
 function sendSketchList() {
   const resp = {

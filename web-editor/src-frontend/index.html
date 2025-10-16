@@ -25,6 +25,7 @@
     <sketchHeader>
       <h2>Awesomeness</h2>
       <dirty>*</dirty>
+      <button class="small" title="Change title" id="btnChangeTitle"><svg><use href="#pencil"></use></svg></button>
       <expander>&nbsp;</expander>
       <button id="btnSave" class="large" title="Save (Ctrl+S)"><svg><use href="#disk"></use></svg></button>
       <button id="btnApply" class="large" title="Apply (Ctrl+Enter)"><svg><use href="#check"></use></svg></button>
@@ -49,12 +50,21 @@
   </content>
   <content id="changeTitle">
     <h2>Change sketch title</h2>
-
+    <p>
+      <input type="text" id="txtTitle" value="" tabindex="0">
+      <button class="ok">OK</button>
+      or <a href="#" class="cancel">cancel</a><br>
+      <span class="feedback progress">Hang tight...</span>
+      <span class="feedback error">
+        Failed to save new title.
+        Maybe it clashes with another sketch?
+      </span>
+    </p>
   </content>
   <content id="changeName">
     <h2>Change your name</h2>
     <p>
-      <input type="text" id="txtName" value="mwhaha" tabindex="0">
+      <input type="text" id="txtName" value="" tabindex="0">
       <button class="ok">OK</button>
       or <a href="#" class="cancel">cancel</a>
     </p>
