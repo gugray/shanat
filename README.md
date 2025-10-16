@@ -62,3 +62,4 @@ id	encoder	status		name		size (mm)	modes	encoders
 33	0	disconnected	HDMI-A-1       	0x0		0	32
 51	50	unknown         Composite-1    	0x0		4	50
 ```
+
