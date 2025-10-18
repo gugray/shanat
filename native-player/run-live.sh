@@ -1,3 +1,3 @@
 #!/bin/bash
 
-../bin/shanat-live --fps 30 --frag frag.glsl
+../bin/shanat-live --fps 60 --frag frag-hydra-test.glsl
