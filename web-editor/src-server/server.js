@@ -7,6 +7,7 @@ import { createReadStream } from 'fs';
 import * as path from "path";
 import {truncate} from "../src-common/utils.js";
 import * as PROT from "../src-common/protocol.js";
+import * as storage from "./storage.js";
 
 let webEditorSocket = null;
 
@@ -39,14 +40,14 @@ export async function run(port) {
   });
 
   // Web socket event handlers
-  wsEditor.on("connection", (ws) => {
+  wsEditor.on("connection", async (ws) => {
     console.log("Editor connected");
     if (webEditorSocket) {
       console.log("There is already an editor connection; closing it.");
       webEditorSocket.close();
     }
     webEditorSocket = ws;
-    sendSketchList();
+    await sendSketchList();
 
     ws.on("close", () => {
       console.log("Editor disconnected");
@@ -84,61 +85,76 @@ async function handleEditorMessage(msg) {
 }
 
 async function sckSaveSketch(msg) {
+
   const resp = {
     action: PROT.ACTION.SaveSketchResult,
-    revision: msg.revision,
+  };
+
+  let error = null;
+  await storage.mutex.runExclusive(async () => {
+    error = await storage.saveSketch(msg.sketchData, msg.author);
+    resp.sketchListItems = getSketchListItems();
+  });
+
+  if (error) resp.error = error;
+  else {
+    resp.revision = msg.revision;
   }
   const outStr = JSON.stringify(resp);
   webEditorSocket.send(outStr);
 }
 
 async function sckRenameSketch(msg) {
+
   const resp = {
     action: PROT.ACTION.RenameSketchResult,
-    error: "not implemented"
+  };
+
+  let error = null;
+  await storage.mutex.runExclusive(async () => {
+    error = await storage.renameSketch(msg.name, msg.newName, msg.newTitle);
+    resp.sketchListItems = getSketchListItems();
+  });
+
+  if (error) resp.error = error;
+  else {
+    resp.name = msg.newName;
+    resp.title = msg.newTitle;
   }
-  // TODO
-  if (msg.newName == "barf") delete resp.error;
   const outStr = JSON.stringify(resp);
   webEditorSocket.send(outStr);
 }
 
+function getSketchListItems() {
+  const items = [];
+  for (const [name, info] of Object.entries(storage.sketchInfos))
+    items.push({
+      name: name,
+      title: info.title,
+      changedAt: info.changedAt.toISOString(),
+      changedBy: info.author,
+    });
+  return items;
+}
 
-function sendSketchList() {
+async function sendSketchList() {
+
+  let sketchListItems;
+  await storage.mutex.runExclusive(() => sketchListItems = getSketchListItems());
+
   const resp = {
     action: PROT.ACTION.SketchList,
-    items: [
-      {
-        name: "lazy-afternoon",
-        title: "Lazy Afternoon",
-        changedAt: new Date().toISOString(),
-        changedBy: "shady artist",
-      },
-      {
-        name: "fizzy-balls",
-        title: "Fizzy Balls",
-        changedAt: new Date().toISOString(),
-        changedBy: "shady artist",
-      },
-    ],
-  }
+    items: sketchListItems,
+  };
   const outStr = JSON.stringify(resp);
   webEditorSocket.send(outStr);
 }
 
 async function sckGetSketch(msg) {
-  // TODO: implement for real lol
+  const sketchData = await storage.mutex.runExclusive(async () => await storage.getSketch(msg.name));
   const resp = { action: PROT.ACTION.Sketch };
-  if (msg.name == "fizzy-balls") {
-    resp.sketchData= {
-        name: msg.name,
-        title: "Fizzy Balls",
-        frag: "void foo() {}\n",
-      };
-  }
-  else {
-    resp.error = `Sketch '${msg.name}' not found`;
-  }
+  if (!sketchData) resp.error = `Failed to load sketch '${msg.name}'; maybe it doesn't exist?`;
+  else resp.sketchData = sketchData;
   const outStr = JSON.stringify(resp);
   webEditorSocket.send(outStr);
 }

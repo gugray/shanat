@@ -1,4 +1,4 @@
-export const defaultSketch = `precision highp float;
+precision highp float;
 
 uniform float time;
 uniform vec2 resolution;
@@ -41,4 +41,3 @@ void main() {
     gl_FragColor.rgb *= 0.7;
     gl_FragColor.rgb = gl_FragColor.rgb * gl_FragColor.rgb;
 }
-`;

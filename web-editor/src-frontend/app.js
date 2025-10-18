@@ -1,10 +1,12 @@
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 import {truncate, esc} from "../src-common/utils.js";
 import * as PROT from "../src-common/protocol.js";
-import {defaultSketch} from "./defaultSketch.js";
+import {defaultSketchFrag, defaultSketchHydra} from "./defaultSketchFrag.js";
 import {getUserName, setUserName} from "./userName.js";
 import {Editor} from "./editor.js";
 
+// const editorMode = "x-shader/x-fragment";
+const editorMode = "javascript";
 const logComms = true;
 setTimeout(() => void init(), 50);
 
@@ -12,7 +14,10 @@ const sketchData = {
   name: null,
   title: null,
   frag: null,
+  hydra: null,
 };
+let isSketchNew = false;
+
 let elmSketchListItems;
 let elmTitle, elmBtnChangeTitle, elmUserName, elmBtnChangeName, elmSketch;
 let elmModal, elmNoSuchSketch, elmChangeTitle, elmChangeName;
@@ -57,12 +62,15 @@ function fillNewSketch() {
   });
   sketchData.title = title;
   sketchData.name = getNameFromTitle(title);
-  sketchData.frag = defaultSketch;
+  // TODO: compile shader
+  sketchData.frag = defaultSketchFrag;
+  sketchData.hydra = defaultSketchHydra;
+  isSketchNew = true;
 }
 
 function displaySketch() {
   elmTitle.innerText = sketchData.title;
-  editor.cm.doc.setValue(sketchData.frag);
+  editor.cm.doc.setValue(sketchData.hydra);
   elmSketch.classList.remove("dirty");
 }
 
@@ -116,15 +124,21 @@ function initGui() {
 }
 
 function apply() {
-  sketchData.frag = editor.cm.doc.getValue();
+  // TODO: compile shader
+  sketchData.hydra = editor.cm.doc.getValue();
   focusEditor();
 }
 
 function save() {
-  sketchData.frag = editor.cm.doc.getValue();
+  // Not dirty, not new: not saving
+  if (!elmSketch.classList.contains("dirty") && !isSketchNew) return;
+
+  // TODO: compile shader
+  sketchData.hydra = editor.cm.doc.getValue();
   const msg = {
     action: PROT.ACTION.SaveSketch,
     sketchData: sketchData,
+    author: getUserName(),
     revision: editor.revision,
   };
   socket.send(JSON.stringify(msg));
@@ -136,7 +150,7 @@ function createEditor(content) {
   const elmHost = document.getElementById("theEditor")
   elmHost.innerHTML = '<div class="editorBg"></div>';
 
-  editor = new Editor(elmHost, "x-shader/x-fragment");
+  editor = new Editor(elmHost, editorMode);
   editor.cm.doc.setValue(content);
   editor.cm.refresh();
   editor.cm.display.input.focus();
@@ -152,6 +166,23 @@ function flashEditor(className) {
   if (elmBg.classList.contains(className)) return;
   elmBg.classList.add(className);
   setTimeout(() => elmBg.classList.remove(className), 200);
+}
+
+function renderSketchList(items) {
+  items.sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
+  let html = "";
+  for (const item of items) {
+    const d = new Date(item.changedAt);
+    const changedAt = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` +
+      ` ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    html += `
+    <a href="/sketch/${encodeURIComponent(item.name)}">
+      <h3>${esc(item.title)}</h3>
+      <changedAt>${changedAt}</changedAt>
+      <changedBy>${esc(item.changedBy)}</changedBy>
+    </a>`;
+  }
+  elmSketchListItems.innerHTML = html;
 }
 
 function showModal(elm) {
@@ -238,6 +269,7 @@ function handleSocketMessage(msg) {
 
 function msgSketch(msg) {
   if (msg.error) {
+    console.log(`SCK/Sketch has error: ${msg.error}`);
     document.getElementById("sketchLoadError").innerText = msg.error;
     showModal(elmNoSuchSketch);
     return;
@@ -245,36 +277,37 @@ function msgSketch(msg) {
   sketchData.name = msg.sketchData.name;
   sketchData.title = msg.sketchData.title;
   sketchData.frag = msg.sketchData.frag;
+  sketchData.hydra = msg.sketchData.hydra;
   displaySketch();
 }
 
 function msgSaveSketchResult(msg) {
-  if (editor.revision == msg.revision) elmSketch.classList.remove("dirty");
+  if (msg.error) {
+    // TODO: error layover
+    console.log(`SCK/SaveSketchResult has error: ${msg.error}`);
+    alert(msg.error);
+    return;
+  }
+  if (editor.revision >= msg.revision) elmSketch.classList.remove("dirty");
+  renderSketchList(msg.sketchListItems);
+  isSketchNew = false;
 }
 
 function msgRenameSketchResult(msg) {
   if (msg.error) {
+    console.log(`SCK/RenameSketchResult has error: ${msg.error}`);
     if (!elmChangeTitle.classList.contains("visible")) return;
     elmChangeTitle.querySelectorAll(".feedback").forEach(e => e.classList.remove("visible"));
     elmChangeTitle.querySelector(".feedback.error").classList.add("visible");
     return;
   }
-  // TODO: read name, redirect
+  else {
+    const newPath = `/sketch/${encodeURIComponent(msg.name)}`;
+    window.location.pathname = newPath;
+  }
   closeModal();
 }
 
 function msgSketchList(msg) {
-  let html = "";
-  for (const item of msg.items) {
-    const d = new Date(item.changedAt);
-    const changedAt = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` +
-      ` ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    html += `
-    <a href="/sketch/${encodeURIComponent(item.name)}">
-      <h3>${esc(item.title)}</h3>
-      <changedAt>${changedAt}</changedAt>
-      <changedBy>${esc(item.changedBy)}</changedBy>
-    </a>`;
-  }
-  elmSketchListItems.innerHTML = html;
+  renderSketchList(msg.items);
 }
