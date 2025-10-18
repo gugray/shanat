@@ -48,6 +48,9 @@ async function runFrontend() {
       ".svg": "copy",
       ".woff2": "copy",
     },
+    define: {
+      global: 'window', // 👈 Polyfill for global
+    },
     write: true,
     metafile: true,
     plugins: plugins,

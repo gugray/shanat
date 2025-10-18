@@ -27,7 +27,8 @@ async function init() {
   initGui();
   initSocket();
 
-  setTimeout(() => showModal(elmChangeTitle), 1000);
+  // DBG
+  // setTimeout(() => showModal(elmChangeTitle), 1000);
 
   if (sketchData.title == null) return;
   else displaySketch();

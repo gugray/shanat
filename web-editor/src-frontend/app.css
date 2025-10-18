@@ -34,7 +34,7 @@ a:hover { text-decoration: underline; }
 code { font-size: 90%; }
 
 & input[type=text] {
-  box-shadow: none; -webkit-box-shadow: none; -webkit-appearance: none; outline: none;
+  /*box-shadow: none; -webkit-box-shadow: none; -webkit-appearance: none; outline: none;*/
   -webkit-border-radius: 0px; border-radius: 0; border: none;
   font-family: inherit; color: var(--clrText); background-color: var(--clrPanelBg);
 }
@@ -77,23 +77,36 @@ modal content {
   padding: 20px;
   & h2 { margin: 0 0 20px 0; font-size: var(--fntSizeHeading); }
   & p { margin: 10px 0 10px 0; }
-  & button { margin: 0; padding: 4px 10px; border-radius: 2px; }
+  & button {
+    display: inline-block; position: relative; top: -1px; height: 37px;
+    padding: 4px 10px; border-radius: 2px;
+  }
   & span.feedback { display: none; }
   & span.feedback.visible { display: inline; }
   & .error { color: var(--clrTextError); }
   & input[type=text] {
+    position: relative; display: inline-block;
     border: 1px solid var(--clrTextFainter); font-size: var(--fntSizeTitle); padding: 5px;
   }
 }
 
 sketchlist {
   display: flex; flex-direction: column; align-items: stretch;
-  height: 100%; max-height: 100%; padding: 10px 0 0 10px; overflow-y: hidden;
+  height: 100%; max-height: 100%; padding: 10px 5px 0 5px; overflow-y: hidden;
   background-color: var(--clrEditorBg); border: 1px solid var(--clrTextFaintest);
-  & h2 { margin: 0 0 20px 0; }
-  & items { flex-grow: 1; overflow-y: scroll; display: block; }
-  & a { display: block; margin-bottom: 20px; color: inherit; text-decoration: none; }
-  & a:hover { text-decoration: none; }
+  & h2 { margin: 0 0 20px 5px; }
+  & items {
+    flex-grow: 1;
+    display: flex; flex-direction: column; align-items: stretch;
+    overflow-y: scroll; scrollbar-width: none;
+  }
+  & a {
+    display: block; padding: 5px 5px 10px 5px;
+    color: inherit; text-decoration: none;
+  }
+  & a:hover {
+    text-decoration: none; background-color: var(--clrPanelBgLighter);
+  }
   & h3 { margin: 0; font-size: var(--fntSizeBase); color: var(--clrControl); }
   & a:hover h3 { color: var(--clrControlHover); }
   & changedAt { display: block; }
