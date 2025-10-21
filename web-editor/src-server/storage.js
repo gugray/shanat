@@ -1,6 +1,6 @@
 import { mkdir, readdir, readFile, rename, stat, writeFile } from "fs/promises";
 import { join } from "path";
-import { Mutex } from 'async-mutex';
+import {Mutex} from "async-mutex";
 
 const defaultStorageDir = "../data";
 const storageDirEnvVar = "STORAGE_DIR";
@@ -9,6 +9,8 @@ let storageDir = defaultStorageDir;
 if (process.env[storageDirEnvVar]) {
   storageDir = process.env[storageDirEnvVar];
 }
+
+console.log(`Using storage directory: ${storageDir}`);
 
 export const mutex = new Mutex();
 export const sketchInfos = await loadSketchInfos();

@@ -1,31 +1,43 @@
+import {Mutex} from "async-mutex";
 import express from "express";
 import * as http from "http";
-import { WebSocketServer } from "ws";
+import {WebSocketServer} from "ws";
 import cors from "cors";
-import { promises as fs } from "fs";
-import { createReadStream } from 'fs';
+import {join} from "path";
+import {createReadStream} from "fs";
+import {writeFile} from "fs/promises";
 import * as path from "path";
 import {truncate} from "../src-common/utils.js";
 import * as PROT from "../src-common/protocol.js";
 import * as storage from "./storage.js";
+
+const publicDir = path.join(process.cwd(), "public");
+const shaderFileName = "frag.glsl";
+const defaultShaderDir = "../data";
+const shaderDirEnvVar = "SHADER_DIR";
+
+let shaderDir = defaultShaderDir;
+if (process.env[shaderDirEnvVar]) {
+  shaderDir = process.env[shaderDirEnvVar];
+}
+console.log(`Using shader directory: ${shaderDir}`);
+
 
 let webEditorSocket = null;
 
 // This is the entry point: starts servers
 export async function run(port) {
 
-  // Use custom data folder, if envvar present
-  // if (process.env.hasOwnProperty(dataDirEnv))
-  //   dataDir = process.env[dataDirEnv];
-  // console.log(`Using data directory: ${dataDir}`);
-
   // Create app, server, web socket servers
   const app = express();
   app.use(cors());
+  app.use(express.static(publicDir));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(publicDir, "index.html"));
+  });
+
   const server = http.createServer(app);
   const wsEditor = new WebSocketServer({ noServer: true });
-
-  // app.get("/clips/:name", handleGetClip);
 
   // Upgrade connections to web socker
   server.on("upgrade", (request, socket, head) => {
@@ -163,7 +175,10 @@ async function sckGetSketch(msg) {
 
 async function sckApplySketch(msg) {
 
-  // TODO: save frag shader
+  await storage.mutex.runExclusive(async () => {
+    const fn = join(shaderDir, shaderFileName);
+    await writeFile(fn, msg.frag, "utf-8");
+  });
 
   const resp = { action: PROT.ACTION.ApplySketchResult };
 
