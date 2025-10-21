@@ -10,14 +10,21 @@ const hydra = new Hydra({
   canvas: canvas,
 });
 
-const input = `
-osc(7, 0.01, 0.8)
-    .color(1.2,1.9,1.3)
-    .saturate(0.4)
-    .rotate(4, 0.8,0)
-`;
+export function generateShader(code) {
 
-export function hydraTest() {
+  const h = hydra.synth;
+  try {
+    const evalHydraCode = new Function('h', `with(h) { return ${code.trim()}; }`);
+    const glsl = evalHydraCode(h).glsl()[0].frag;
+    return [glsl, null];
+  }
+  catch (err) {
+    if (err.message) return ["", err.message];
+    else return ["", "Failed to compile code"];
+  }
+}
+
+function test() {
 
   const h = hydra.synth;
 

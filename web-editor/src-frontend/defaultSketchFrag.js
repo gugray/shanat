@@ -1,3 +1,9 @@
+export const emptyFrag = `void main() {
+    gl_FragColor.rgb = vec3(0.5, 0.0, 0.0);
+    gl_FragColor.a = 1.0;
+}
+`
+
 export const defaultSketchHydra = `osc(7, 0.01, 0.8)
     .color(1.2,1.9,1.3)
     .saturate(0.4)

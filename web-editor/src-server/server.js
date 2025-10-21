@@ -82,6 +82,7 @@ async function handleEditorMessage(msg) {
   if (msg.action == PROT.ACTION.GetSketch) await sckGetSketch(msg);
   else if (msg.action == PROT.ACTION.SaveSketch) await sckSaveSketch(msg);
   else if (msg.action == PROT.ACTION.RenameSketch) await sckRenameSketch(msg);
+  else if (msg.action == PROT.ACTION.ApplySketch) await sckApplySketch(msg);
 }
 
 async function sckSaveSketch(msg) {
@@ -155,6 +156,17 @@ async function sckGetSketch(msg) {
   const resp = { action: PROT.ACTION.Sketch };
   if (!sketchData) resp.error = `Failed to load sketch '${msg.name}'; maybe it doesn't exist?`;
   else resp.sketchData = sketchData;
+  const outStr = JSON.stringify(resp);
+  webEditorSocket.send(outStr);
+}
+
+
+async function sckApplySketch(msg) {
+
+  // TODO: save frag shader
+
+  const resp = { action: PROT.ACTION.ApplySketchResult };
+
   const outStr = JSON.stringify(resp);
   webEditorSocket.send(outStr);
 }

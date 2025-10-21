@@ -1,9 +1,10 @@
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 import {truncate, esc} from "../src-common/utils.js";
 import * as PROT from "../src-common/protocol.js";
-import {defaultSketchFrag, defaultSketchHydra} from "./defaultSketchFrag.js";
+import {defaultSketchFrag, defaultSketchHydra, emptyFrag} from "./defaultSketchFrag.js";
 import {getUserName, setUserName} from "./userName.js";
 import {Editor} from "./editor.js";
+import {generateShader} from "./shaderGenertor.js";
 
 // const editorMode = "x-shader/x-fragment";
 const editorMode = "javascript";
@@ -22,13 +23,14 @@ let elmSketchListItems;
 let elmTitle, elmBtnChangeTitle, elmUserName, elmBtnChangeName, elmSketch;
 let elmModal, elmNoSuchSketch, elmChangeTitle, elmChangeName;
 let elmTxtName, elmTxtTitle;
+let elmSketchError;
 let socket;
 let editor;
 
 async function init() {
 
   parseLocation();
-  createEditor("~~ hang tight; loading ~~");
+  createEditor("");
   initGui();
   initSocket();
 
@@ -124,8 +126,22 @@ function initGui() {
 }
 
 function apply() {
-  // TODO: compile shader
+  elmSketchError.classList.remove("visible");
   sketchData.hydra = editor.cm.doc.getValue();
+  const [frag, error] = generateShader(sketchData.hydra);
+  if (error) {
+    sketchData.frag = emptyFrag;
+    elmSketchError.classList.add("visible");
+    elmSketchError.innerText = error;
+  }
+  else sketchData.frag = frag;
+
+  const msg = {
+    action: PROT.ACTION.ApplySketch,
+    frag: sketchData.frag,
+  };
+  socket.send(JSON.stringify(msg));
+
   focusEditor();
 }
 
@@ -133,8 +149,10 @@ function save() {
   // Not dirty, not new: not saving
   if (!elmSketch.classList.contains("dirty") && !isSketchNew) return;
 
-  // TODO: compile shader
   sketchData.hydra = editor.cm.doc.getValue();
+  const [frag, error] = generateShader(sketchData.hydra);
+  if (error) sketchData.frag = emptyFrag;
+  else sketchData.frag = frag;
   const msg = {
     action: PROT.ACTION.SaveSketch,
     sketchData: sketchData,
@@ -154,6 +172,9 @@ function createEditor(content) {
   editor.cm.doc.setValue(content);
   editor.cm.refresh();
   editor.cm.display.input.focus();
+
+  elmSketchError = document.createElement("sketchError");
+  elmHost.appendChild(elmSketchError);
 }
 
 function focusEditor() {
@@ -264,6 +285,7 @@ function handleSocketMessage(msg) {
   if (msg.action == PROT.ACTION.Sketch) msgSketch(msg);
   else if (msg.action == PROT.ACTION.SaveSketchResult) msgSaveSketchResult(msg);
   else if (msg.action == PROT.ACTION.RenameSketchResult) msgRenameSketchResult(msg);
+  else if (msg.action == PROT.ACTION.ApplySketchResult) msgApplySketchResult(msg);
   else if (msg.action == PROT.ACTION.SketchList) msgSketchList(msg);
 }
 
@@ -291,6 +313,16 @@ function msgSaveSketchResult(msg) {
   if (editor.revision >= msg.revision) elmSketch.classList.remove("dirty");
   renderSketchList(msg.sketchListItems);
   isSketchNew = false;
+}
+
+function msgApplySketchResult(msg) {
+  if (!msg.error) {
+    flashEditor("apply");
+    return;
+  }
+  elmSketchError.innerText = msg.error;
+  elmSketchError.classList.add("visible");
+  flashEditor("error");
 }
 
 function msgRenameSketchResult(msg) {
