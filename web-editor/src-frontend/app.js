@@ -4,7 +4,7 @@ import * as PROT from "../src-common/protocol.js";
 import {defaultSketchFrag, defaultSketchHydra, emptyFrag} from "./defaultSketchFrag.js";
 import {getUserName, setUserName} from "./userName.js";
 import {Editor} from "./editor.js";
-import {generateShader} from "./shaderGenertor.js";
+import {generateShader} from "./shaderGenerator.js";
 
 // const editorMode = "x-shader/x-fragment";
 const editorMode = "javascript";

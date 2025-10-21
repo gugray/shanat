@@ -12,9 +12,13 @@ const hydra = new Hydra({
 
 export function generateShader(code) {
 
+  // Remove comments, and trim
+  code = code.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  code = code.trim();
+
   const h = hydra.synth;
   try {
-    const evalHydraCode = new Function('h', `with(h) { return ${code.trim()}; }`);
+    const evalHydraCode = new Function('h', `with(h) { return ${code}; }`);
     const glsl = evalHydraCode(h).glsl()[0].frag;
     return [glsl, null];
   }
