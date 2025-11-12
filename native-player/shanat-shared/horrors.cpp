@@ -183,10 +183,15 @@ static void set_crtc(drmModeModeInfo mode, uint32_t fb_id)
     if (ret) die("drmModeSetCrtc");
 }
 
-void init_horrors()
+void init_horrors(const char *devicePath)
 {
-    drm_fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
-    if (drm_fd < 0) die("open /dev/dri/card0");
+    printf("Device: %s\n", devicePath);
+    drm_fd = open(devicePath, O_RDWR | O_CLOEXEC);
+    if (drm_fd < 0)
+    {
+        fprintf(stderr, "Failed to open device '%s'\n", devicePath);
+        exit_with_cleanup(1);
+    }
 
     resources = drmModeGetResources(drm_fd);
     if (!resources) die("drmModeGetResources");

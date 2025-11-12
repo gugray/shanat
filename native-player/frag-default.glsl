@@ -1,8 +1,11 @@
+#version 310 es
+precision mediump float;
+
 // UPDATE 0
-precision highp float;
 
 uniform float time;
 uniform vec2 resolution;
+out vec4 fragColor;
 
 #define PI 3.141592653
 
@@ -23,8 +26,8 @@ float circle(vec2 uv, vec2 c, float r) {
 }
 
 void main() {
-    gl_FragColor.rgb = vec3(0.0);
-    gl_FragColor.a = 1.0;
+    fragColor.rgb = vec3(0.0);
+    fragColor.a = 1.0;
 
     vec2 uv = (gl_FragCoord.xy / resolution) * 2.0 - 1.0;
     float aspect = resolution.x / resolution.y;
@@ -33,12 +36,12 @@ void main() {
     vec2 c = vec2(0.0, 0.15);
     c = rot(c, time);
 
-    gl_FragColor.r = circle(uv, c, r + 0.05 * sin(time * 0.5));
+    fragColor.r = circle(uv, c, r + 0.05 * sin(time * 0.5));
     c = rot(c, PI * 2.0 / 3.0);
-    gl_FragColor.g = circle(uv, c, r + 0.05 * sin(time * 0.3));
+    fragColor.g = circle(uv, c, r + 0.05 * sin(time * 0.3));
     c = rot(c, PI * 2.0 / 3.0);
-    gl_FragColor.b = circle(uv, c, r + 0.05 * sin(time * 0.17));
+    fragColor.b = circle(uv, c, r + 0.05 * sin(time * 0.17));
 
-    gl_FragColor.rgb *= 0.7;
-    gl_FragColor.rgb = gl_FragColor.rgb * gl_FragColor.rgb;
+    fragColor.rgb *= 0.7;
+    fragColor.rgb = fragColor.rgb * fragColor.rgb;
 }

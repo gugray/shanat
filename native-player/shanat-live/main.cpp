@@ -10,9 +10,13 @@
 #include <math.h>
 #include <memory>
 #include <stdint.h>
+#include <string.h>
 #include <string>
 #include <unistd.h>
 
+static const char *defaultDevicePath = "/dev/dri/card0";
+
+static const char *devicePath = defaultDevicePath;
 static int target_fps;
 static std::string frag_glsl_file;
 static int64_t frag_glsl_modif;
@@ -33,6 +37,7 @@ static void parse_args(int argc, const char *argv[])
 {
     auto parser = ArgumentParser("shanat-live");
     parser.add_argument("help", "--help", "", "Displays this help message");
+    parser.add_argument("dev", "--dev", "", "Device path (default: /dev/dri/card0)", STORE);
     parser.add_argument("fps", "--fps", "", "Target FPS (default: 25)", STORE, "25");
     parser.add_argument("frag", "--frag", "", "Fragment shader GLSL file (input)", STORE);
     parser.add_argument("resp", "--resp", "", "Update response file (output)", STORE);
@@ -45,6 +50,15 @@ static void parse_args(int argc, const char *argv[])
     }
 
     bool ok = true;
+
+    if (parser.get("dev").is_set)
+    {
+        auto dev_val = parser.get("dev").value.c_str();
+        size_t len = strlen(dev_val);
+        char *cpy = (char *)malloc(len + 1);
+        strncpy(cpy, dev_val, len);
+        devicePath = cpy;
+    }
 
     auto fps_val = parser.get("fps").value;
     target_fps = atoi(fps_val.c_str());
@@ -90,7 +104,7 @@ int main(int argc, const char *argv[])
 static void main_inner()
 {
     // Set up graphics
-    init_horrors();
+    init_horrors(devicePath);
 
     // FPS control
     FPS fps(target_fps);
@@ -201,7 +215,8 @@ static void report_shader_link_error(GLuint prog)
 }
 
 static const char *vert_sweep_glsl = R"(
-attribute vec2 a_pos;
+#version 310 es
+in vec2 a_pos;
 void main() {
     gl_Position = vec4(a_pos, 0.0, 1.0);
 }

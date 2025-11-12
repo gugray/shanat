@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <math.h>
 
+static const char *devicePath = "/dev/dri/card0";
+
 static bool running = true;
 
 static void sighandler(int)
@@ -53,7 +55,7 @@ int main()
     signal(SIGINT, sighandler);
     signal(SIGTERM, sighandler);
 
-    init_horrors();
+    init_horrors(devicePath);
     FPS fps(25);
 
     // Compile shaders, link program
